@@ -1,4 +1,4 @@
-// ── STYLES GLOBAUX ─────────────────────────────────────────────────────────────
+// ── STYLES       GLOBAUX ─────────────────────────────────────────────────────────────
 // Toute modification visuelle (couleurs, espacements, polices) se fait
 // UNIQUEMENT ici. Aucun style inline ne devrait être ajouté dans les composants
 // sauf cas ponctuel déjà existant (valeurs dynamiques calculées).
