@@ -15,7 +15,19 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const [rows] = await pool.query("SELECT data FROM evenements ORDER BY created_at DESC");
-      const hist = rows.map(r => JSON.parse(r.data));
+      // La colonne `data` peut être de type JSON (mysql2 renvoie déjà un objet)
+      // ou TEXT (mysql2 renvoie une chaîne à parser). On gère les deux, et on
+      // ignore une ligne corrompue au lieu de faire échouer toute la liste.
+      const hist = rows
+        .map(r => {
+          try {
+            return typeof r.data === "string" ? JSON.parse(r.data) : r.data;
+          } catch (e) {
+            console.error("Ligne evenement illisible, ignoree:", e.message);
+            return null;
+          }
+        })
+        .filter(Boolean);
       return res.status(200).json(hist);
     }
 
