@@ -182,16 +182,14 @@ export default function App() {
 
         <div className="main">
           <div className="tabs">
-            <button className={"tab" + (tab === "nouveau" ? " on" : "")} onClick={() => { setTab("nouveau"); setStep(0); }}>✨ Nouvel evenement</button>
-            <button className={"tab" + (tab === "resultat" ? " on" : "")} onClick={() => setTab("resultat")} disabled={!entry}>📋 Resultat</button>
+            <button className={"tab" + (tab === "nouveau" ? " on" : "")} onClick={() => { setTab("nouveau"); setStep(0); }}>📝 Génération menu</button>
+            <button className={"tab" + (tab === "manuel" ? " on" : "")} onClick={() => setTab("manuel")}>✍️ Menu manuel</button>
+            <button className={"tab" + (tab === "resultat" ? " on" : "")} onClick={() => setTab("resultat")} disabled={!entry}>📋 Résultat</button>
             <button className={"tab" + (tab === "hist" ? " on" : "")} onClick={() => setTab("hist")}>
-              🕐 Historique{hist.length > 0 && <span className="bdg">{hist.length}</span>}
+              💾 Sauvegardes{hist.length > 0 && <span className="bdg">{hist.length}</span>}
             </button>
             <button className={"tab" + (tab === "config" ? " on" : "")} onClick={() => setTab("config")}>
               ⚙️ Configuration{items.length > 0 && <span className="bdg">{items.length}</span>}
-            </button>
-            <button className={"tab" + (tab === "manuel" ? " on" : "")} onClick={() => setTab("manuel")}>
-              ✍️ Manuel
             </button>
           </div>
 
