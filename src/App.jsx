@@ -72,20 +72,36 @@ export default function App() {
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const togJ = j => upd("jours", form.jours.includes(j) ? form.jours.filter(x => x !== j) : [...form.jours, j]);
 
-  const handleGenerer = async () => {
+  // Génération = APERÇU uniquement. Rien n'est stocké tant que l'utilisateur
+  // n'a pas cliqué sur « Enregistrer » (voir handleEnregistrer).
+  const handleGenerer = () => {
     const e = genererEvenement(form, hist);
-    setHist([e, ...hist]);
     setEntry(e);
     setTab("resultat");
     setStep(0);
-    await addEvent(e); // persistance MySQL en arrière-plan
+  };
+
+  // Indique si l'événement affiché a déjà été enregistré (présent dans l'historique).
+  const isSaved = !!entry && hist.some(h => h.id === entry.id);
+
+  // Enregistrement explicite : commit en base (MySQL) + ajout à l'historique.
+  // Le nom passé (optionnel) remplace nomEvenement.
+  const handleEnregistrer = async (nom) => {
+    if (!entry) return;
+    const e = nom && nom.trim() ? { ...entry, nomEvenement: nom.trim() } : entry;
+    setEntry(e);
+    setHist([e, ...hist.filter(h => h.id !== e.id)]); // évite tout doublon
+    await addEvent(e); // persistance MySQL
   };
 
   const handleRegenJour = async jour => {
     const updated = regenererJour(entry, jour);
     setEntry(updated);
-    setHist(hist.map(h => (h.id === entry.id ? updated : h)));
-    await updateEvent(updated);
+    // On ne synchronise en base que si l'événement est déjà enregistré.
+    if (hist.some(h => h.id === updated.id)) {
+      setHist(hist.map(h => (h.id === updated.id ? updated : h)));
+      await updateEvent(updated);
+    }
   };
 
   const handleSaveEdit = async (jour, pKey, field, value) => {
@@ -97,8 +113,10 @@ export default function App() {
       },
     };
     setEntry(updated);
-    setHist(hist.map(h => (h.id === entry.id ? updated : h)));
-    await updateEvent(updated);
+    if (hist.some(h => h.id === updated.id)) {
+      setHist(hist.map(h => (h.id === updated.id ? updated : h)));
+      await updateEvent(updated);
+    }
   };
 
   const handleSupprimerHist = async id => {
@@ -168,6 +186,8 @@ export default function App() {
           {!loading && tab === "resultat" && (
             <Resultat
               entry={entry}
+              isSaved={isSaved}
+              onEnregistrer={handleEnregistrer}
               onCopierWord={copierPourWord}
               onRegenJour={handleRegenJour}
               onSaveEdit={handleSaveEdit}
