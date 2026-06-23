@@ -196,6 +196,10 @@ export function genFicheAchatDoc(E) {
   const nb = E.nombrePersonnes || 0;
   const jours = E.jours || [];
 
+  // Catalogue complet = catalogue de base + items custom embarqués dans l'événement.
+  // Permet aux items ajoutés via la Configuration d'avoir leur fournisseur/prix/portion.
+  const FULLCAT = { ...CAT, ...(E.customCatalogue || {}) };
+
   // items[four] = { key -> {nom, occ, four, price, note} }  (à la portion)
   // prot[four]  = { key -> {nom, occ, four, mode} }           (au poids/pièce)
   const items = {};
@@ -206,7 +210,7 @@ export function genFicheAchatDoc(E) {
   const addItem = raw => {
     const key = norm(raw);
     if (!key) return;
-    let [four, price, note] = CAT[key] || [];
+    let [four, price, note] = FULLCAT[key] || [];
     if (!four) {                                   // fallback par mots-clés
       if (/poulet|poule|gesier/.test(key)) four = "VOLAILLER";
       else if (/boeuf|mouton|viande/.test(key)) four = "BOUCHER";
