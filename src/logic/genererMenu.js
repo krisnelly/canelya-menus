@@ -17,32 +17,35 @@ import { getAccomp } from "./accompagnements";
 
 // Génère le menu complet d'un jour pour les prestations actives.
 // `used` = éléments déjà servis cette semaine (alternance) — voir buildDayUsed.
-export function genJour(style, nb, prest, used, idx = 0, produitsP = [], isLundi = false, ruptureP = []) {
+export function genJour(style, nb, prest, used, idx = 0, produitsP = [], isLundi = false, ruptureP = [], custom = {}) {
   const m = {};
   const fR = arr => filtreRupture(arr, ruptureP);
+  // Fusionne la liste d'origine avec les items custom de la MÊME catégorie.
+  // Additif uniquement : aucune règle de sélection n'est modifiée.
+  const C = (pool, key) => [...pool, ...((custom && custom[key]) || [])];
 
   if (prest.matin) {
     m.matin = {
       sucres: (() => {
         // Garantir 1 base blé + 1 alternatif (équilibre des farines)
-        const ble = pickNR(fR(MATIN_SUCRES_BLE), used.matinSucres || []);
-        const alt = pickNR(fR(MATIN_SUCRES_ALT), [...(used.matinSucres || []), ble || ""]);
+        const ble = pickNR(fR(C(MATIN_SUCRES_BLE, "MATIN_SUCRES_BLE")), used.matinSucres || []);
+        const alt = pickNR(fR(C(MATIN_SUCRES_ALT, "MATIN_SUCRES_ALT")), [...(used.matinSucres || []), ble || ""]);
         if (ble && alt) return [ble, alt].join(", ");
         return pickNR(fR(MATIN_SUCRES), used.matinSucres || [], 2).join(", ");
       })(),
       sales: isLundi
         ? pickNR(fR(LUNDI_MATIN_SALES), used.matinSales || [], 2).join(", ")
-        : pickNR(fR(MATIN_SALES), used.matinSales || [], 2).join(", "),
-      fruits: pickNR(fR(MATIN_FRUITS), used.matinFruits || []),
+        : pickNR(fR(C(MATIN_SALES, "MATIN_SALES")), used.matinSales || [], 2).join(", "),
+      fruits: pickNR(fR(C(MATIN_FRUITS, "MATIN_FRUITS")), used.matinFruits || []),
       chauds: MATIN_CHAUDS, // toujours The + Lait + Cafe
-      bouillie: pickNR(fR(MATIN_BOUILLIES), used.matinBouillies || []),
-      boisson: pickNR(fR(MATIN_BOISSONS), used.matinBoissons || []),
+      bouillie: pickNR(fR(C(MATIN_BOUILLIES, "MATIN_BOUILLIES")), used.matinBouillies || []),
+      boisson: pickNR(fR(C(MATIN_BOISSONS, "MATIN_BOISSONS")), used.matinBoissons || []),
       isLundi,
     };
   }
 
   if (prest.dejeuner) {
-    const entree = pickNR(fR(ENTREES), used.entrees || []);
+    const entree = pickNR(fR(C(ENTREES, "ENTREES")), used.entrees || []);
     let proteinesStr, proteinesNoms;
     if (isLundi) {
       const lp = pickNR(fR(LUNDI_PROTEINES), used.proteines || []);
@@ -61,8 +64,8 @@ export function genJour(style, nb, prest, used, idx = 0, produitsP = [], isLundi
       entree, proteines: proteinesStr, accomp,
       dessert: isLundi
         ? pickNR(fR(LUNDI_DESSERTS), used.desserts || [])
-        : pickNR(fR(DESSERTS), used.desserts || []),
-      boisson: pickNR(fR(DEJ_BOISSONS), used.dejBoissons || []),
+        : pickNR(fR(C(DESSERTS, "DESSERTS")), used.desserts || []),
+      boisson: pickNR(fR(C(DEJ_BOISSONS, "DEJ_BOISSONS")), used.dejBoissons || []),
       isLundi,
     };
   }
@@ -70,32 +73,32 @@ export function genJour(style, nb, prest, used, idx = 0, produitsP = [], isLundi
   if (prest.apm) {
     m.apm = {
       sucres: (() => {
-        const ble = pickNR(fR(APM_SUCRES_BLE), used.apmSucres || []);
-        const alt = pickNR(fR(APM_SUCRES_ALT), [...(used.apmSucres || []), ble || ""]);
+        const ble = pickNR(fR(C(APM_SUCRES_BLE, "APM_SUCRES_BLE")), used.apmSucres || []);
+        const alt = pickNR(fR(C(APM_SUCRES_ALT, "APM_SUCRES_ALT")), [...(used.apmSucres || []), ble || ""]);
         if (ble && alt) return [ble, alt].join(", ");
         return pickNR(fR(APM_SUCRES), used.apmSucres || [], 2).join(", ");
       })(),
-      sales: pickNR(fR(APM_SALES), used.apmSales || [], 2).join(", "),
-      boisson: pickNR(fR(APM_BOISSONS), used.apmBoissons || []),
+      sales: pickNR(fR(C(APM_SALES, "APM_SALES")), used.apmSales || [], 2).join(", "),
+      boisson: pickNR(fR(C(APM_BOISSONS, "APM_BOISSONS")), used.apmBoissons || []),
     };
   }
 
   if (prest.cocktailDej) {
     m.cocktailDej = {
-      sales: pickNR(fR(COCKTAIL_SALES), used.cSales || [], 4).join(", "),
-      sucres: pickNR(fR(COCKTAIL_SUCRES), used.cSucres || []),
-      boissons: pickNR(fR(COCKTAIL_BOISSONS_SOFT), used.cBoissons || [], 2).join(", ") + " + Eau minerale",
+      sales: pickNR(fR(C(COCKTAIL_SALES, "COCKTAIL_SALES")), used.cSales || [], 4).join(", "),
+      sucres: pickNR(fR(C(COCKTAIL_SUCRES, "COCKTAIL_SUCRES")), used.cSucres || []),
+      boissons: pickNR(fR(C(COCKTAIL_BOISSONS_SOFT, "COCKTAIL_BOISSONS_SOFT")), used.cBoissons || [], 2).join(", ") + " + Eau minerale",
     };
   }
 
   if (prest.cocktailDin) {
     const nb2 = Math.floor(Math.random() * 3) + 5; // 5 à 7 choix
     m.cocktailDin = {
-      sales: pickNR(fR(COCKTAIL_SALES), used.cSales || [], nb2 - 1).join(", "),
-      sucres: pickNR(fR(COCKTAIL_SUCRES), used.cSucres || [], 2).join(", "),
+      sales: pickNR(fR(C(COCKTAIL_SALES, "COCKTAIL_SALES")), used.cSales || [], nb2 - 1).join(", "),
+      sucres: pickNR(fR(C(COCKTAIL_SUCRES, "COCKTAIL_SUCRES")), used.cSucres || [], 2).join(", "),
       boissons: prest.alcool
-        ? pickNR(fR(COCKTAIL_BOISSONS_SOFT), used.cBoissons || [], 2).join(", ") + " / " + pick(COCKTAIL_BOISSONS_ALC, [], 2).join(", ")
-        : pickNR(fR(COCKTAIL_BOISSONS_SOFT), used.cBoissons || [], 3).join(", "),
+        ? pickNR(fR(C(COCKTAIL_BOISSONS_SOFT, "COCKTAIL_BOISSONS_SOFT")), used.cBoissons || [], 2).join(", ") + " / " + pick(C(COCKTAIL_BOISSONS_ALC, "COCKTAIL_BOISSONS_ALC"), [], 2).join(", ")
+        : pickNR(fR(C(COCKTAIL_BOISSONS_SOFT, "COCKTAIL_BOISSONS_SOFT")), used.cBoissons || [], 3).join(", "),
     };
   }
 
