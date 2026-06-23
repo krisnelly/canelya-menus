@@ -3,18 +3,29 @@
 // Toute modification de la mise en page générale du résultat se fait ici ;
 // les sous-parties (tableau, panneaux) se modifient dans leurs fichiers dédiés.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TableauMenu from "./TableauMenu";
 import PanneauResultat from "./PanneauResultat";
 import { genererRapportMenu, genererTousLesRapports } from "../logic/rapportMenu";
 
-export default function Resultat({ entry, onCopierWord, onRegenJour, onSaveEdit }) {
+export default function Resultat({ entry, isSaved, onEnregistrer, onCopierWord, onRegenJour, onSaveEdit }) {
   const [generatingMenu, setGeneratingMenu] = useState(false);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [waLink, setWaLink] = useState(null);
+  const [nom, setNom] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Resynchronise le champ « nom » quand on change d'événement affiché.
+  useEffect(() => { setNom(entry?.nomEvenement || ""); }, [entry?.id]);
 
   if (!entry) return <div className="empty">Aucun evenement genere</div>;
   const e = entry;
+
+  const handleEnregistrer = async () => {
+    setSaving(true);
+    try { await onEnregistrer(nom); }
+    finally { setSaving(false); }
+  };
 
   const prepareWaLink = (label) => {
     const texte = encodeURIComponent(
@@ -63,7 +74,23 @@ export default function Resultat({ entry, onCopierWord, onRegenJour, onSaveEdit 
             {e.alcool && <span className="tag-a">🍷 Alcool</span>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {!isSaved ? (
+            <>
+              <input
+                type="text"
+                value={nom}
+                onChange={ev => setNom(ev.target.value)}
+                placeholder="Nom du menu"
+                style={{ width: 190 }}
+              />
+              <button className="btn-word" style={{ background: "#185c18" }} onClick={handleEnregistrer} disabled={saving}>
+                {saving ? "⏳ Enregistrement..." : "💾 Enregistrer"}
+              </button>
+            </>
+          ) : (
+            <span className="tag-p" style={{ fontSize: 13, padding: "6px 12px" }}>✓ Enregistré</span>
+          )}
           <button className="btn-copy" onClick={() => onCopierWord(e)}>📋 Copier pour Claude</button>
           <button className="btn-word" onClick={handleGenererWord} disabled={generatingMenu}>
             {generatingMenu ? "⏳ Generation..." : "📄 Menu (Word)"}
@@ -78,6 +105,10 @@ export default function Resultat({ entry, onCopierWord, onRegenJour, onSaveEdit 
           )}
         </div>
       </div>
+
+      {!isSaved && (
+        <div className="warn">📝 Aperçu non enregistré — cliquez sur « 💾 Enregistrer » pour le conserver dans l'historique et la base de données.</div>
+      )}
 
       {waLink && (
         <div className="inf">
