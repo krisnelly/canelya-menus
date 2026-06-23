@@ -12,7 +12,9 @@ import EtapeLogistique from "./components/EtapeLogistique";
 import EtapeEquipe from "./components/EtapeEquipe";
 import Resultat from "./components/Resultat";
 import Historique from "./components/Historique";
+import Configuration from "./components/Configuration";
 import { loadHistory, addEvent, updateEvent, deleteEvent } from "./logic/storage";
+import { loadItems, addItem, updateItem, deleteItem } from "./logic/items";
 import { genererEvenement, regenererJour } from "./logic/genererEvenement";
 
 const FORM0 = {
@@ -63,10 +65,15 @@ export default function App() {
   const [form, setForm] = useState(FORM0);
   const [entry, setEntry] = useState(null);
   const [hist, setHist] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadHistory().then(h => { setHist(h); setLoading(false); });
+    Promise.all([loadHistory(), loadItems()]).then(([h, it]) => {
+      setHist(h);
+      setItems(it);
+      setLoading(false);
+    });
   }, []);
 
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -75,7 +82,7 @@ export default function App() {
   // Génération = APERÇU uniquement. Rien n'est stocké tant que l'utilisateur
   // n'a pas cliqué sur « Enregistrer » (voir handleEnregistrer).
   const handleGenerer = () => {
-    const e = genererEvenement(form, hist);
+    const e = genererEvenement(form, hist, items);
     setEntry(e);
     setTab("resultat");
     setStep(0);
@@ -95,7 +102,7 @@ export default function App() {
   };
 
   const handleRegenJour = async jour => {
-    const updated = regenererJour(entry, jour);
+    const updated = regenererJour(entry, jour, items);
     setEntry(updated);
     // On ne synchronise en base que si l'événement est déjà enregistré.
     if (hist.some(h => h.id === updated.id)) {
@@ -122,6 +129,21 @@ export default function App() {
   const handleSupprimerHist = async id => {
     setHist(hist.filter(x => x.id !== id));
     await deleteEvent(id);
+  };
+
+  // ── Catalogue custom (onglet Configuration) ────────────────────────────────
+  const handleAddItem = async it => {
+    setItems([...items, it]);
+    const ok = await addItem(it);
+    if (!ok) alert("⚠️ L'item est ajouté localement mais l'enregistrement en base a échoué.");
+  };
+  const handleUpdateItem = async it => {
+    setItems(items.map(x => (x.id === it.id ? it : x)));
+    await updateItem(it);
+  };
+  const handleDeleteItem = async id => {
+    setItems(items.filter(x => x.id !== id));
+    await deleteItem(id);
   };
 
   const canNext = [
@@ -157,6 +179,9 @@ export default function App() {
             <button className={"tab" + (tab === "resultat" ? " on" : "")} onClick={() => setTab("resultat")} disabled={!entry}>📋 Resultat</button>
             <button className={"tab" + (tab === "hist" ? " on" : "")} onClick={() => setTab("hist")}>
               🕐 Historique{hist.length > 0 && <span className="bdg">{hist.length}</span>}
+            </button>
+            <button className={"tab" + (tab === "config" ? " on" : "")} onClick={() => setTab("config")}>
+              ⚙️ Configuration{items.length > 0 && <span className="bdg">{items.length}</span>}
             </button>
           </div>
 
@@ -200,6 +225,15 @@ export default function App() {
               onVoir={h => { setEntry(h); setTab("resultat"); }}
               onCopierWord={copierPourWord}
               onSupprimer={handleSupprimerHist}
+            />
+          )}
+
+          {!loading && tab === "config" && (
+            <Configuration
+              items={items}
+              onAdd={handleAddItem}
+              onUpdate={handleUpdateItem}
+              onDelete={handleDeleteItem}
             />
           )}
         </div>
