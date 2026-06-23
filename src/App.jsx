@@ -13,6 +13,7 @@ import EtapeEquipe from "./components/EtapeEquipe";
 import Resultat from "./components/Resultat";
 import Historique from "./components/Historique";
 import Configuration from "./components/Configuration";
+import CreationManuelle from "./components/CreationManuelle";
 import { loadHistory, addEvent, updateEvent, deleteEvent } from "./logic/storage";
 import { loadItems, addItem, updateItem, deleteItem } from "./logic/items";
 import { genererEvenement, regenererJour } from "./logic/genererEvenement";
@@ -131,6 +132,12 @@ export default function App() {
     await deleteEvent(id);
   };
 
+  // ── Création manuelle : reçoit l'événement composé et l'affiche (aperçu) ────
+  const handleCreerManuel = e => {
+    setEntry(e);
+    setTab("resultat");
+  };
+
   // ── Catalogue custom (onglet Configuration) ────────────────────────────────
   const handleAddItem = async it => {
     setItems([...items, it]);
@@ -182,6 +189,9 @@ export default function App() {
             </button>
             <button className={"tab" + (tab === "config" ? " on" : "")} onClick={() => setTab("config")}>
               ⚙️ Configuration{items.length > 0 && <span className="bdg">{items.length}</span>}
+            </button>
+            <button className={"tab" + (tab === "manuel" ? " on" : "")} onClick={() => setTab("manuel")}>
+              ✍️ Manuel
             </button>
           </div>
 
@@ -235,6 +245,10 @@ export default function App() {
               onUpdate={handleUpdateItem}
               onDelete={handleDeleteItem}
             />
+          )}
+
+          {!loading && tab === "manuel" && (
+            <CreationManuelle items={items} onCreer={handleCreerManuel} />
           )}
         </div>
       </div>
