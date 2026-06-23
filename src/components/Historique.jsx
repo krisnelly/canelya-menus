@@ -12,7 +12,7 @@ export default function Historique({ hist, onVoir, onCopierWord, onSupprimer }) 
           <div key={h.id} className="hi">
             <div>
               <span className="hic">{h.clientNom}</span>
-              <span style={{ color: "#f5f0e8", marginLeft: 10 }}>{h.nomEvenement}</span>
+              <span style={{ color: "#8a5a1c", marginLeft: 10, fontWeight: 600 }}>{h.nomEvenement}</span>
               <div className="hid">{h.dateDebut} · {h.nombrePersonnes} pers. · {h.service} · {h.typeEvenement}</div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
