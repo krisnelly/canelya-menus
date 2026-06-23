@@ -28,11 +28,35 @@ function buildCustom(items) {
   return { pools, catalogue };
 }
 
-// Construit un nouvel événement complet (menus + équipe + planning + devis).
+// Assemble l'objet `entry` final à partir du formulaire + d'un objet `menus`
+// déjà construit. PARTAGÉ entre le mode auto (genererEvenement) et le mode
+// manuel (CreationManuelle) → garantit une structure strictement identique
+// (équipe, planning, devis, champs). Ne contient aucune logique de menu.
+export function assembleEvenement(form, menus, customCatalogue = {}) {
+  const cd = CLIENTS.find(c => c.id === form.clientId) || { style: "mixte" };
+  const clientNom = form.clientId === "autre" ? (form.clientAutre || "Autre") : cd.nom;
+  const joursOrd = JOURS.filter(j => form.jours.includes(j));
+
+  return {
+    id: Date.now(),
+    ...form,
+    clientNom,
+    dateCreation: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+    numeroDevis: numDevis(),
+    jours: joursOrd,
+    service: form.nombrePersonnes > 5 ? "Buffet" : "Parts individuelles",
+    menus,
+    customCatalogue, // fournisseur/prix/portion des items custom → fiche d'achat conforme
+    equipe: calculEquipe(form.nombrePersonnes, form.distanceKm),
+    planning: calculPlanning(form),
+    devis: calculDevis(form),
+  };
+}
+
+// Construit un nouvel événement complet (menus générés automatiquement).
 // `items` = items custom (catalogue enrichi) ; optionnel, par défaut aucun.
 export function genererEvenement(form, hist, items = []) {
   const cd = CLIENTS.find(c => c.id === form.clientId) || { style: "mixte" };
-  const clientNom = form.clientId === "autre" ? (form.clientAutre || "Autre") : cd.nom;
 
   const usedBase = getUsedFromHistory(hist, form.clientId);
   const prest = {
@@ -51,24 +75,7 @@ export function genererEvenement(form, hist, items = []) {
     menus[j] = genJour(cd.style, form.nombrePersonnes, prest, du, idx, produitsP, j === "Lundi", ruptureP, customPools);
   });
 
-  const equipe = calculEquipe(form.nombrePersonnes, form.distanceKm);
-  const planning = calculPlanning(form);
-  const devis = calculDevis(form);
-
-  return {
-    id: Date.now(),
-    ...form,
-    clientNom,
-    dateCreation: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
-    numeroDevis: numDevis(),
-    jours: joursOrd,
-    service: form.nombrePersonnes > 5 ? "Buffet" : "Parts individuelles",
-    menus,
-    customCatalogue, // fournisseur/prix/portion des items custom → fiche d'achat conforme
-    equipe,
-    planning,
-    devis,
-  };
+  return assembleEvenement(form, menus, customCatalogue);
 }
 
 // Régénère uniquement le menu d'un jour donné, sans toucher au reste de
